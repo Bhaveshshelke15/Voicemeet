@@ -1,8 +1,9 @@
-# Use Java 17
-FROM openjdk:17-jdk-slim
+FROM eclipse-temurin:17-jdk
 
-# Copy jar file
+WORKDIR /app
+
 COPY target/*.jar app.jar
 
-# Run app
-ENTRYPOINT ["java","-jar","/app.jar"]
+EXPOSE 8080
+
+ENTRYPOINT ["java","-jar","app.jar"]
