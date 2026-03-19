@@ -1,0 +1,33 @@
+package com.voicemeet.voicemeetbackend.config;
+
+import org.springframework.context.annotation.Configuration;
+import org.springframework.messaging.simp.config.MessageBrokerRegistry;
+import org.springframework.web.socket.config.annotation.*;
+
+@Configuration
+@EnableWebSocketMessageBroker
+public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
+
+    @Override
+    public void registerStompEndpoints(StompEndpointRegistry registry) {
+
+        registry
+                .addEndpoint("/ws")
+                .setAllowedOriginPatterns("*")
+                .withSockJS();
+    }
+
+    @Override
+    public void configureMessageBroker(MessageBrokerRegistry registry) {
+
+        // Broker for topics and private queues
+        registry.enableSimpleBroker("/topic", "/queue");
+
+        // Prefix for messages sent from client
+        registry.setApplicationDestinationPrefixes("/app");
+
+        // Prefix used for private messaging
+        registry.setUserDestinationPrefix("/user");
+    }
+
+}
