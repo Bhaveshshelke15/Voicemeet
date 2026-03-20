@@ -16,9 +16,15 @@ public class CorsConfig {
 
         CorsConfiguration config = new CorsConfiguration();
 
-        config.setAllowedOriginPatterns(List.of("http://localhost:3000"));
+        // ✅ Allow your deployed frontend
+        config.setAllowedOriginPatterns(List.of(
+                "https://voicemeet-frontend.onrender.com"
+        ));
+
         config.setAllowedHeaders(List.of("*"));
         config.setAllowedMethods(List.of("*"));
+
+        // ✅ IMPORTANT
         config.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source =
