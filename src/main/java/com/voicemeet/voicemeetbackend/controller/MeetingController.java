@@ -11,7 +11,7 @@ import java.util.*;
 
 @RestController
 @RequestMapping("/meeting")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://voicemeet-frontend.onrender.com")
 public class MeetingController {
 
     private final MeetingRepository meetingRepository;
