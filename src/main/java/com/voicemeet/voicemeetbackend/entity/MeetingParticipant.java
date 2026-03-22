@@ -11,9 +11,8 @@ public class MeetingParticipant {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String meetingId;
-
+    private String meetingId;   // ✅ UUID (String)
     private String userId;
 
-    private String status;
+    private String status;      // INVITED, JOINED
 }
