@@ -11,7 +11,9 @@ public class MeetingUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String meetingId;  // ✅ FIXED
+    private String meetingId;   // ✅ FIXED
 
     private String userId;
+
+    private String status;
 }
