@@ -25,17 +25,16 @@ public class MeetingInviteController {
     @PostMapping("/invite")
     public MeetingParticipant inviteUser(@RequestBody MeetingParticipant mp){
 
-        // 🔥 prevent duplicates
         if(participantRepo.existsByMeetingIdAndUserId(mp.getMeetingId(), mp.getUserId())){
             throw new RuntimeException("User already invited");
         }
 
-        mp.setStatus("INVITED"); // 🔥 important
+        mp.setStatus("INVITED");
 
         return participantRepo.save(mp);
     }
 
-    // ✅ Get meetings for user (WITH meeting name)
+    // ✅ Get meetings for user
     @GetMapping("/user/{userId}")
     public List<Map<String, String>> getUserMeetings(@PathVariable String userId){
 
@@ -60,5 +59,11 @@ public class MeetingInviteController {
         }
 
         return response;
+    }
+
+    // 🔥🔥 ADD THIS METHOD
+    @GetMapping("/all")
+    public List<Meeting> getAllMeetings() {
+        return meetingRepo.findAll();
     }
 }
