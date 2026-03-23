@@ -1,9 +1,5 @@
 package com.voicemeet.voicemeetbackend.controller;
 
-
-
-
-
 import com.voicemeet.voicemeetbackend.entity.MeetingRecording;
 import com.voicemeet.voicemeetbackend.repository.RecordingRepository;
 
@@ -11,9 +7,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+// ✅ NEW IMPORTS
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
+
 import java.io.File;
-import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -24,7 +24,9 @@ public class RecordingController {
     @Autowired
     private RecordingRepository repository;
 
-
+    ////////////////////////////////////////////////////////
+    // UPLOAD (UNCHANGED)
+    ////////////////////////////////////////////////////////
 
     @PostMapping("/upload")
     public String uploadRecording(
@@ -34,7 +36,7 @@ public class RecordingController {
 
         try {
 
-            String folder = "C:/recordings/";
+            String folder = System.getProperty("user.dir") + "/recordings/";
 
             File dir = new File(folder);
 
@@ -65,10 +67,41 @@ public class RecordingController {
         }
     }
 
+    ////////////////////////////////////////////////////////
+    // GET ALL (UNCHANGED)
+    ////////////////////////////////////////////////////////
+
     @GetMapping("/all")
     public List<MeetingRecording> getAll(){
-
         return repository.findAll();
+    }
 
+    ////////////////////////////////////////////////////////
+    // 🔥 NEW: SERVE RECORDING FILE
+    ////////////////////////////////////////////////////////
+
+    @GetMapping("/recordings/{fileName}")
+    public ResponseEntity<Resource> getRecording(@PathVariable String fileName) {
+
+        try {
+
+            String folder = System.getProperty("user.dir") + "/recordings/";
+            File file = new File(folder + fileName);
+
+            if (!file.exists()) {
+                return ResponseEntity.notFound().build();
+            }
+
+            Resource resource = new UrlResource(file.toURI());
+
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION,
+                            "inline; filename=\"" + fileName + "\"")
+                    .body(resource);
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.internalServerError().build();
+        }
     }
 }
