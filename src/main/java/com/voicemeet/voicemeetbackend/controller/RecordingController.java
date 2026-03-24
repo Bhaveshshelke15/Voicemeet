@@ -7,13 +7,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-// ✅ NEW IMPORTS
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 @RestController
@@ -24,8 +25,11 @@ public class RecordingController {
     @Autowired
     private RecordingRepository repository;
 
+    // ✅ FIXED: Use stable path
+    private final String UPLOAD_DIR = System.getProperty("java.io.tmpdir") + "/recordings/";
+
     ////////////////////////////////////////////////////////
-    // UPLOAD (UNCHANGED)
+    // ✅ UPLOAD
     ////////////////////////////////////////////////////////
 
     @PostMapping("/upload")
@@ -36,9 +40,7 @@ public class RecordingController {
 
         try {
 
-            String folder = System.getProperty("user.dir") + "/recordings/";
-
-            File dir = new File(folder);
+            File dir = new File(UPLOAD_DIR);
 
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -46,12 +48,12 @@ public class RecordingController {
 
             String fileName = meetingId + "_" + System.currentTimeMillis() + ".webm";
 
-            File savedFile = new File(folder + fileName);
+            File savedFile = new File(UPLOAD_DIR + fileName);
 
             file.transferTo(savedFile);
 
+            // ✅ Save metadata
             MeetingRecording rec = new MeetingRecording();
-
             rec.setMeetingId(meetingId);
             rec.setFileName(fileName);
             rec.setDate(java.time.LocalDate.now().toString());
@@ -59,7 +61,9 @@ public class RecordingController {
 
             repository.save(rec);
 
-            return "Recording saved";
+            System.out.println("✅ File saved at: " + savedFile.getAbsolutePath());
+
+            return "Recording saved successfully";
 
         } catch (Exception e) {
             e.printStackTrace();
@@ -68,16 +72,16 @@ public class RecordingController {
     }
 
     ////////////////////////////////////////////////////////
-    // GET ALL (UNCHANGED)
+    // ✅ GET ALL RECORDINGS
     ////////////////////////////////////////////////////////
 
     @GetMapping("/all")
-    public List<MeetingRecording> getAll(){
+    public List<MeetingRecording> getAll() {
         return repository.findAll();
     }
 
     ////////////////////////////////////////////////////////
-    // 🔥 NEW: SERVE RECORDING FILE
+    // ✅ SERVE RECORDING FILE
     ////////////////////////////////////////////////////////
 
     @GetMapping("/recordings/{fileName}")
@@ -85,18 +89,22 @@ public class RecordingController {
 
         try {
 
-            String folder = System.getProperty("user.dir") + "/recordings/";
-            File file = new File(folder + fileName);
+            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName).normalize();
+
+            File file = filePath.toFile();
+
+            System.out.println("📂 Looking for: " + file.getAbsolutePath());
 
             if (!file.exists()) {
+                System.out.println("❌ File NOT found");
                 return ResponseEntity.notFound().build();
             }
 
             Resource resource = new UrlResource(file.toURI());
 
             return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION,
-                            "inline; filename=\"" + fileName + "\"")
+                    .header(HttpHeaders.CONTENT_TYPE, "audio/webm")
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
                     .body(resource);
 
         } catch (Exception e) {
