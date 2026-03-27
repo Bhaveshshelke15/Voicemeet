@@ -11,13 +11,13 @@ public class MeetingRecording {
 
     private String meetingId;
 
-    // ✅ NEW FIELD
     private String meetingName;
 
-    // ✅ NEW FIELD (comma separated users)
     private String participants;
 
-    private String fileName;
+    // ✅ Cloudinary URL
+    private String fileUrl;
+
     private String date;
     private String time;
 
@@ -51,12 +51,13 @@ public class MeetingRecording {
         this.participants = participants;
     }
 
-    public String getFileName() {
-        return fileName;
+    // ✅ FIXED (fileUrl instead of fileName)
+    public String getFileUrl() {
+        return fileUrl;
     }
 
-    public void setFileName(String fileName) {
-        this.fileName = fileName;
+    public void setFileUrl(String fileUrl) {
+        this.fileUrl = fileUrl;
     }
 
     public String getDate() {

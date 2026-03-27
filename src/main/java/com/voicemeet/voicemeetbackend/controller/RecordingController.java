@@ -6,18 +6,15 @@ import com.voicemeet.voicemeetbackend.repository.MeetingRepository;
 import com.voicemeet.voicemeetbackend.repository.RecordingRepository;
 import com.voicemeet.voicemeetbackend.service.ParticipantService;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 
-import java.io.File;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 import java.util.Set;
 
@@ -35,10 +32,11 @@ public class RecordingController {
     @Autowired
     private ParticipantService participantService;
 
-    private final String UPLOAD_DIR = "recordings/";
+    @Autowired
+    private Cloudinary cloudinary;
 
     ////////////////////////////////////////////////////////
-    // ✅ UPLOAD RECORDING (SAFE VERSION)
+    // ✅ UPLOAD RECORDING (CLOUDINARY VERSION)
     ////////////////////////////////////////////////////////
 
     @PostMapping("/upload")
@@ -60,26 +58,30 @@ public class RecordingController {
                 return ResponseEntity.badRequest().body("Meeting ID missing");
             }
 
-            // ✅ CREATE DIRECTORY
-            File dir = new File(UPLOAD_DIR);
-            if (!dir.exists()) {
-                boolean created = dir.mkdirs();
-                System.out.println("Directory created: " + created);
-            }
+            // //////////////////////////////////////////////////////
+            // ✅ UPLOAD TO CLOUDINARY
+            // //////////////////////////////////////////////////////
+            var uploadResult = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.asMap(
+                            "resource_type", "auto",   // VERY IMPORTANT for audio
+                            "folder", "voicemeet_recordings"
+                    )
+            );
 
-            // ✅ FILE NAME
-            String fileName = meetingId + "_" + System.currentTimeMillis() + ".webm";
+            String fileUrl = uploadResult.get("secure_url").toString();
 
-            File savedFile = new File(UPLOAD_DIR + fileName);
-            file.transferTo(savedFile);
+            System.out.println("☁ Uploaded to Cloudinary: " + fileUrl);
 
-            System.out.println("📁 File saved at: " + savedFile.getAbsolutePath());
-
+            // //////////////////////////////////////////////////////
             // ✅ GET MEETING
+            // //////////////////////////////////////////////////////
             Meeting meeting = meetingRepository.findById(meetingId).orElse(null);
             String meetingName = (meeting != null) ? meeting.getMeetingName() : "Unknown";
 
-            // ✅ SAFE PARTICIPANTS
+            // //////////////////////////////////////////////////////
+            // ✅ SAFE PARTICIPANTS (same logic)
+            // //////////////////////////////////////////////////////
             String participants = "";
 
             try {
@@ -88,7 +90,7 @@ public class RecordingController {
                 if (participantsSet != null && !participantsSet.isEmpty()) {
                     participants = String.join(",", participantsSet);
                 } else {
-                    participants = "admin"; // fallback
+                    participants = "admin";
                 }
 
             } catch (Exception e) {
@@ -96,12 +98,14 @@ public class RecordingController {
                 participants = "admin";
             }
 
-            // ✅ SAVE TO DB
+            // //////////////////////////////////////////////////////
+            // ✅ SAVE TO DB (URL instead of file name)
+            // //////////////////////////////////////////////////////
             MeetingRecording rec = new MeetingRecording();
             rec.setMeetingId(meetingId);
             rec.setMeetingName(meetingName);
             rec.setParticipants(participants);
-            rec.setFileName(fileName);
+            rec.setFileUrl(fileUrl); // 🔥 IMPORTANT CHANGE
             rec.setDate(java.time.LocalDate.now().toString());
             rec.setTime(java.time.LocalTime.now().toString());
 
@@ -109,14 +113,14 @@ public class RecordingController {
 
             System.out.println("✅ Saved in DB");
 
-            return ResponseEntity.ok("Saved Successfully");
+            return ResponseEntity.ok(fileUrl);
 
         } catch (Exception e) {
             e.printStackTrace();
 
             return ResponseEntity
                     .status(500)
-                    .body("ERROR: " + e.getMessage()); // 🔥 REAL ERROR
+                    .body("ERROR: " + e.getMessage());
         }
     }
 
@@ -131,36 +135,6 @@ public class RecordingController {
         } catch (Exception e) {
             e.printStackTrace();
             return ResponseEntity.status(500).body("Error fetching recordings");
-        }
-    }
-
-    ////////////////////////////////////////////////////////
-    // ✅ SERVE AUDIO FILE
-    ////////////////////////////////////////////////////////
-
-    @GetMapping("/recordings/{fileName}")
-    public ResponseEntity<Resource> getRecording(@PathVariable String fileName) {
-
-        try {
-            Path filePath = Paths.get(UPLOAD_DIR + fileName);
-            File file = filePath.toFile();
-
-            System.out.println("Looking file: " + file.getAbsolutePath());
-
-            if (!file.exists()) {
-                return ResponseEntity.notFound().build();
-            }
-
-            Resource resource = new UrlResource(file.toURI());
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_TYPE, "audio/webm")
-                    .header("Access-Control-Allow-Origin", "*")
-                    .body(resource);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            return ResponseEntity.internalServerError().build();
         }
     }
 }
