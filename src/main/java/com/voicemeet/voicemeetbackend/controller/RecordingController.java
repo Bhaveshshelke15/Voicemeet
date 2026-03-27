@@ -1,7 +1,10 @@
 package com.voicemeet.voicemeetbackend.controller;
 
+import com.voicemeet.voicemeetbackend.entity.Meeting;
 import com.voicemeet.voicemeetbackend.entity.MeetingRecording;
+import com.voicemeet.voicemeetbackend.repository.MeetingRepository;
 import com.voicemeet.voicemeetbackend.repository.RecordingRepository;
+import com.voicemeet.voicemeetbackend.service.ParticipantService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +19,7 @@ import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Set;
 
 @RestController
 @RequestMapping("/recording")
@@ -25,11 +29,17 @@ public class RecordingController {
     @Autowired
     private RecordingRepository repository;
 
-    // ✅ FIXED: Use stable path
-    private final String UPLOAD_DIR = System.getProperty("java.io.tmpdir") + "/recordings/";
+    @Autowired
+    private MeetingRepository meetingRepository;
+
+    @Autowired
+    private ParticipantService participantService;
+
+    // ✅ FIXED STORAGE (NOT temp)
+    private final String UPLOAD_DIR = "recordings/";
 
     ////////////////////////////////////////////////////////
-    // ✅ UPLOAD
+    // ✅ UPLOAD RECORDING
     ////////////////////////////////////////////////////////
 
     @PostMapping("/upload")
@@ -41,33 +51,39 @@ public class RecordingController {
         try {
 
             File dir = new File(UPLOAD_DIR);
-
-            if (!dir.exists()) {
-                dir.mkdirs();
-            }
+            if (!dir.exists()) dir.mkdirs();
 
             String fileName = meetingId + "_" + System.currentTimeMillis() + ".webm";
 
             File savedFile = new File(UPLOAD_DIR + fileName);
-
             file.transferTo(savedFile);
 
-            // ✅ Save metadata
+            // ✅ GET MEETING NAME
+            Meeting meeting = meetingRepository.findById(meetingId).orElse(null);
+            String meetingName = (meeting != null) ? meeting.getMeetingName() : "Unknown";
+
+            // ✅ GET PARTICIPANTS
+            Set<String> participantsSet = participantService.getParticipants(meetingId);
+            String participants = String.join(",", participantsSet);
+
+            // ✅ SAVE DATA
             MeetingRecording rec = new MeetingRecording();
             rec.setMeetingId(meetingId);
+            rec.setMeetingName(meetingName);
+            rec.setParticipants(participants);
             rec.setFileName(fileName);
             rec.setDate(java.time.LocalDate.now().toString());
             rec.setTime(java.time.LocalTime.now().toString());
 
             repository.save(rec);
 
-            System.out.println("✅ File saved at: " + savedFile.getAbsolutePath());
+            System.out.println("Saved at: " + savedFile.getAbsolutePath());
 
-            return "Recording saved successfully";
+            return "Saved Successfully";
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error saving recording";
+            return "Error";
         }
     }
 
@@ -81,7 +97,7 @@ public class RecordingController {
     }
 
     ////////////////////////////////////////////////////////
-    // ✅ SERVE RECORDING FILE
+    // ✅ SERVE AUDIO FILE
     ////////////////////////////////////////////////////////
 
     @GetMapping("/recordings/{fileName}")
@@ -89,14 +105,12 @@ public class RecordingController {
 
         try {
 
-            Path filePath = Paths.get(UPLOAD_DIR).resolve(fileName).normalize();
-
+            Path filePath = Paths.get(UPLOAD_DIR + fileName);
             File file = filePath.toFile();
 
-            System.out.println("📂 Looking for: " + file.getAbsolutePath());
+            System.out.println("Looking file: " + file.getAbsolutePath());
 
             if (!file.exists()) {
-                System.out.println("❌ File NOT found");
                 return ResponseEntity.notFound().build();
             }
 
@@ -104,7 +118,7 @@ public class RecordingController {
 
             return ResponseEntity.ok()
                     .header(HttpHeaders.CONTENT_TYPE, "audio/webm")
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + fileName + "\"")
+                    .header("Access-Control-Allow-Origin", "*")
                     .body(resource);
 
         } catch (Exception e) {
