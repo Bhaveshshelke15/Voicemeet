@@ -1,4 +1,5 @@
-package com.voicemeet.voicemeetbackend.controller;
+
+        package com.voicemeet.voicemeetbackend.controller;
 
 import com.voicemeet.voicemeetbackend.dto.UserLoginDTO;
 import com.voicemeet.voicemeetbackend.entity.User;
@@ -7,6 +8,7 @@ import com.voicemeet.voicemeetbackend.security.JwtUtil;
 
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -22,6 +24,7 @@ public class UserAuthController {
         this.jwtUtil = jwtUtil;
     }
 
+    // ✅ LOGIN
     @PostMapping("/login")
     public String login(@RequestBody UserLoginDTO dto){
 
@@ -38,5 +41,11 @@ public class UserAuthController {
         return jwtUtil.generateToken(dto.getUserId());
     }
 
+    // 🔥 NEW API: GET ALL USERS
+    @GetMapping("/all")
+    public List<User> getAllUsers(){
+        return userRepository.findAll();
+    }
 
 }
+
