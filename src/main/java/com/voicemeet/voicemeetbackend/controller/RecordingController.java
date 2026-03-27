@@ -35,38 +35,68 @@ public class RecordingController {
     @Autowired
     private ParticipantService participantService;
 
-    // ✅ FIXED STORAGE (NOT temp)
     private final String UPLOAD_DIR = "recordings/";
 
     ////////////////////////////////////////////////////////
-    // ✅ UPLOAD RECORDING
+    // ✅ UPLOAD RECORDING (SAFE VERSION)
     ////////////////////////////////////////////////////////
 
     @PostMapping("/upload")
-    public String uploadRecording(
+    public ResponseEntity<?> uploadRecording(
             @RequestParam("file") MultipartFile file,
             @RequestParam("meetingId") String meetingId
     ) {
 
         try {
+            System.out.println("🔥 Upload API HIT");
+            System.out.println("Meeting ID: " + meetingId);
 
+            // ✅ VALIDATION
+            if (file == null || file.isEmpty()) {
+                return ResponseEntity.badRequest().body("File is empty");
+            }
+
+            if (meetingId == null || meetingId.isEmpty()) {
+                return ResponseEntity.badRequest().body("Meeting ID missing");
+            }
+
+            // ✅ CREATE DIRECTORY
             File dir = new File(UPLOAD_DIR);
-            if (!dir.exists()) dir.mkdirs();
+            if (!dir.exists()) {
+                boolean created = dir.mkdirs();
+                System.out.println("Directory created: " + created);
+            }
 
+            // ✅ FILE NAME
             String fileName = meetingId + "_" + System.currentTimeMillis() + ".webm";
 
             File savedFile = new File(UPLOAD_DIR + fileName);
             file.transferTo(savedFile);
 
-            // ✅ GET MEETING NAME
+            System.out.println("📁 File saved at: " + savedFile.getAbsolutePath());
+
+            // ✅ GET MEETING
             Meeting meeting = meetingRepository.findById(meetingId).orElse(null);
             String meetingName = (meeting != null) ? meeting.getMeetingName() : "Unknown";
 
-            // ✅ GET PARTICIPANTS
-            Set<String> participantsSet = participantService.getParticipants(meetingId);
-            String participants = String.join(",", participantsSet);
+            // ✅ SAFE PARTICIPANTS
+            String participants = "";
 
-            // ✅ SAVE DATA
+            try {
+                Set<String> participantsSet = participantService.getParticipants(meetingId);
+
+                if (participantsSet != null && !participantsSet.isEmpty()) {
+                    participants = String.join(",", participantsSet);
+                } else {
+                    participants = "admin"; // fallback
+                }
+
+            } catch (Exception e) {
+                System.out.println("⚠ Participant fetch failed: " + e.getMessage());
+                participants = "admin";
+            }
+
+            // ✅ SAVE TO DB
             MeetingRecording rec = new MeetingRecording();
             rec.setMeetingId(meetingId);
             rec.setMeetingName(meetingName);
@@ -77,13 +107,16 @@ public class RecordingController {
 
             repository.save(rec);
 
-            System.out.println("Saved at: " + savedFile.getAbsolutePath());
+            System.out.println("✅ Saved in DB");
 
-            return "Saved Successfully";
+            return ResponseEntity.ok("Saved Successfully");
 
         } catch (Exception e) {
             e.printStackTrace();
-            return "Error";
+
+            return ResponseEntity
+                    .status(500)
+                    .body("ERROR: " + e.getMessage()); // 🔥 REAL ERROR
         }
     }
 
@@ -92,8 +125,13 @@ public class RecordingController {
     ////////////////////////////////////////////////////////
 
     @GetMapping("/all")
-    public List<MeetingRecording> getAll() {
-        return repository.findAll();
+    public ResponseEntity<?> getAll() {
+        try {
+            return ResponseEntity.ok(repository.findAll());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching recordings");
+        }
     }
 
     ////////////////////////////////////////////////////////
@@ -104,7 +142,6 @@ public class RecordingController {
     public ResponseEntity<Resource> getRecording(@PathVariable String fileName) {
 
         try {
-
             Path filePath = Paths.get(UPLOAD_DIR + fileName);
             File file = filePath.toFile();
 
