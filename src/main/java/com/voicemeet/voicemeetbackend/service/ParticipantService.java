@@ -9,14 +9,18 @@ public class ParticipantService {
 
     private final Map<String, Set<String>> meetingParticipants = new HashMap<>();
 
-    public void joinMeeting(String meetingId, String username) {
+    // ✅ JOIN
+    public synchronized void joinMeeting(String meetingId, String username) {
 
         meetingParticipants
                 .computeIfAbsent(meetingId, k -> new HashSet<>())
                 .add(username);
+
+        System.out.println("👤 Joined: " + username + " -> " + meetingParticipants.get(meetingId));
     }
 
-    public void leaveMeeting(String meetingId, String username) {
+    // ✅ LEAVE
+    public synchronized void leaveMeeting(String meetingId, String username) {
 
         if (meetingParticipants.containsKey(meetingId)) {
 
@@ -26,10 +30,19 @@ public class ParticipantService {
                 meetingParticipants.remove(meetingId);
             }
         }
+
+        System.out.println("👋 Left: " + username);
     }
 
-    public Set<String> getParticipants(String meetingId) {
+    // ✅ GET PARTICIPANTS
+    public synchronized Set<String> getParticipants(String meetingId) {
 
-        return meetingParticipants.getOrDefault(meetingId, new HashSet<>());
+        Set<String> participants = meetingParticipants.get(meetingId);
+
+        if (participants == null || participants.isEmpty()) {
+            return new HashSet<>(Collections.singleton("admin"));
+        }
+
+        return participants;
     }
 }
