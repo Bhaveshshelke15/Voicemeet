@@ -14,7 +14,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "https://voicemeet-frontend.onrender.com")
+@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final AdminRepository adminRepository;
