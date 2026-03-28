@@ -1,7 +1,5 @@
 package com.voicemeet.voicemeetbackend.entity;
 
-
-
 import jakarta.persistence.*;
 
 @Entity
@@ -18,7 +16,12 @@ public class ChatMessageEntity {
     private String meetingId;
 
     private String message;
+
+    // ✅ KEEP (for now)
     private String time;
+
+    // ✅ NEW FIELD (VERY IMPORTANT)
+    private String status;
 
     public ChatMessageEntity(){}
 
@@ -41,4 +44,8 @@ public class ChatMessageEntity {
 
     public String getTime() { return time; }
     public void setTime(String time) { this.time = time; }
+
+    // ✅ NEW GETTER SETTER
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
 }
