@@ -21,26 +21,23 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 
         http
-                .cors(Customizer.withDefaults())   // enable CORS
-                .csrf(csrf -> csrf.disable())     // disable CSRF for APIs
+                .cors(cors -> {
+                })   // ✅ enable CORS
+                .csrf(csrf -> csrf.disable())
+
                 .authorizeHttpRequests(auth -> auth
 
-                        // login endpoints
+                        // 🔥 VERY IMPORTANT (fixes CORS preflight)
+                        .requestMatchers(org.springframework.http.HttpMethod.OPTIONS, "/**").permitAll()
+
+                        // public APIs
                         .requestMatchers("/auth/**").permitAll()
-
-                        // websocket
                         .requestMatchers("/ws/**").permitAll()
-
-                        // signaling for WebRTC
                         .requestMatchers("/signal/**").permitAll()
 
-                        // meeting APIs
+                        // secured APIs
                         .requestMatchers("/meeting/**").authenticated()
-
-                        // admin APIs
                         .requestMatchers("/admin/**").authenticated()
-
-                        // user APIs
                         .requestMatchers("/user/**").authenticated()
 
                         .anyRequest().permitAll()
