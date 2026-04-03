@@ -31,19 +31,17 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // ✅ 🔥 CRITICAL FIX: SKIP WEBSOCKET REQUESTS
-        if (path.startsWith("/ws") || path.contains("/websocket") || path.contains("/info")) {
+        // ✅ ONLY THIS LINE ADDED (minimal fix)
+        if (path.startsWith("/ws")) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // 🔥 allow preflight requests
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
         }
 
-        // skip login APIs
         if (path.startsWith("/auth")) {
             filterChain.doFilter(request, response);
             return;
@@ -56,7 +54,6 @@ public class JwtFilter extends OncePerRequestFilter {
             String token = authHeader.substring(7);
 
             try {
-
                 String username = jwtUtil.extractUsername(token);
 
                 UsernamePasswordAuthenticationToken authentication =

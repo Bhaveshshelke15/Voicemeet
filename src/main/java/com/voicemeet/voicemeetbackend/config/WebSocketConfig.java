@@ -13,16 +13,14 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         registry
                 .addEndpoint("/ws")
-                .setAllowedOriginPatterns("*")   // ✅ VERY IMPORTANT (APK + Render)
-                .setAllowedOrigins("*")          // ✅ extra safety
-                .withSockJS();                  // ✅ REQUIRED for SockJS
+                .setAllowedOriginPatterns("*") // keep this (APK needs it)
+                .withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
 
-        registry.enableSimpleBroker("/topic", "/queue"); // ✅ message broker
-        registry.setApplicationDestinationPrefixes("/app"); // ✅ send prefix
-        registry.setUserDestinationPrefix("/user"); // ✅ private messages
+        registry.enableSimpleBroker("/topic");
+        registry.setApplicationDestinationPrefixes("/app");
     }
 }

@@ -25,24 +25,10 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
 
                 .authorizeHttpRequests(auth -> auth
-
-                        // ✅ Allow preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-
-                        // ✅ WebSocket (VERY IMPORTANT)
-                        .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/topic/**").permitAll()
-                        .requestMatchers("/app/**").permitAll()
-
-                        // public APIs
                         .requestMatchers("/auth/**").permitAll()
-
-                        // secured APIs
-                        .requestMatchers("/meeting/**").authenticated()
-                        .requestMatchers("/admin/**").authenticated()
-                        .requestMatchers("/user/**").authenticated()
-
-                        .anyRequest().permitAll()
+                        .requestMatchers("/ws/**").permitAll()
+                        .anyRequest().authenticated()
                 )
 
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
