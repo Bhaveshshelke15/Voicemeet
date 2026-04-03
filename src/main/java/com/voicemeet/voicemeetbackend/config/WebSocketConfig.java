@@ -13,14 +13,20 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         registry
                 .addEndpoint("/ws")
-                .setAllowedOriginPatterns("*") // keep this (APK needs it)
+                .setAllowedOriginPatterns(
+                        "http://localhost",                      // ✅ APK (MOST IMPORTANT)
+                        "http://localhost:*",                   // ✅ APK dynamic ports
+                        "http://127.0.0.1:*",                   // ✅ fallback
+                        "https://voicemeet-frontend.onrender.com"
+                )
                 .withSockJS();
     }
 
     @Override
     public void configureMessageBroker(MessageBrokerRegistry registry) {
 
-        registry.enableSimpleBroker("/topic");
+        registry.enableSimpleBroker("/topic", "/queue");
         registry.setApplicationDestinationPrefixes("/app");
+        registry.setUserDestinationPrefix("/user");
     }
 }
