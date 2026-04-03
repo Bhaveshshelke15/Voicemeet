@@ -31,7 +31,13 @@ public class JwtFilter extends OncePerRequestFilter {
 
         String path = request.getServletPath();
 
-        // 🔥 VERY IMPORTANT: allow preflight requests
+        // ✅ 🔥 CRITICAL FIX: SKIP WEBSOCKET REQUESTS
+        if (path.startsWith("/ws") || path.contains("/websocket") || path.contains("/info")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        // 🔥 allow preflight requests
         if (HttpMethod.OPTIONS.matches(request.getMethod())) {
             filterChain.doFilter(request, response);
             return;
