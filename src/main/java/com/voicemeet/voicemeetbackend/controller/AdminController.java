@@ -12,7 +12,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/admin")
-@CrossOrigin(origins = "http://localhost:3000")
+@CrossOrigin(origins = "https://voicemeet-frontend.onrender.com")
 public class AdminController {
 
     private final UserRepository userRepository;
