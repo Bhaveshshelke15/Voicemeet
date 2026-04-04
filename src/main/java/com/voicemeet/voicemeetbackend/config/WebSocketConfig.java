@@ -13,12 +13,7 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
         registry
                 .addEndpoint("/ws")
-                .setAllowedOriginPatterns(
-                        "http://localhost",                      // ✅ APK (MOST IMPORTANT)
-                        "http://localhost:*",                   // ✅ APK dynamic ports
-                        "http://127.0.0.1:*",                   // ✅ fallback
-                        "https://voicemeet-frontend.onrender.com"
-                )
+                .setAllowedOriginPatterns("*")   // 🔥 FIX (ALLOW APK + WEB)
                 .withSockJS();
     }
 
