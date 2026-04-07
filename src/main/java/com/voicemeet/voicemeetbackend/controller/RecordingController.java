@@ -42,14 +42,15 @@ public class RecordingController {
     @PostMapping("/upload")
     public ResponseEntity<?> uploadRecording(
             @RequestParam("file") MultipartFile file,
-            @RequestParam("meetingId") String meetingId
+            @RequestParam("meetingId") String meetingId,
+            @RequestParam(value = "userId", required = false) String userId // 🔥 ADDED
     ) {
 
         try {
             System.out.println("🔥 Upload API HIT");
             System.out.println("Meeting ID: " + meetingId);
+            System.out.println("User ID: " + userId); // 🔥 ADDED
 
-            // ✅ VALIDATION
             if (file == null || file.isEmpty()) {
                 return ResponseEntity.badRequest().body("File is empty");
             }
@@ -58,13 +59,10 @@ public class RecordingController {
                 return ResponseEntity.badRequest().body("Meeting ID missing");
             }
 
-            // //////////////////////////////////////////////////////
-            // ✅ UPLOAD TO CLOUDINARY
-            // //////////////////////////////////////////////////////
             var uploadResult = cloudinary.uploader().upload(
                     file.getBytes(),
                     ObjectUtils.asMap(
-                            "resource_type", "auto",   // VERY IMPORTANT for audio
+                            "resource_type", "auto",
                             "folder", "voicemeet_recordings"
                     )
             );
@@ -73,15 +71,9 @@ public class RecordingController {
 
             System.out.println("☁ Uploaded to Cloudinary: " + fileUrl);
 
-            // //////////////////////////////////////////////////////
-            // ✅ GET MEETING
-            // //////////////////////////////////////////////////////
             Meeting meeting = meetingRepository.findById(meetingId).orElse(null);
             String meetingName = (meeting != null) ? meeting.getMeetingName() : "Unknown";
 
-            // //////////////////////////////////////////////////////
-            // ✅ SAFE PARTICIPANTS (same logic)
-            // //////////////////////////////////////////////////////
             String participants = "";
 
             try {
@@ -98,16 +90,18 @@ public class RecordingController {
                 participants = "admin";
             }
 
-            // //////////////////////////////////////////////////////
-            // ✅ SAVE TO DB (URL instead of file name)
-            // //////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////
+            // ✅ SAVE TO DB
+            //////////////////////////////////////////////////////
             MeetingRecording rec = new MeetingRecording();
             rec.setMeetingId(meetingId);
             rec.setMeetingName(meetingName);
             rec.setParticipants(participants);
-            rec.setFileUrl(fileUrl); // 🔥 IMPORTANT CHANGE
+            rec.setFileUrl(fileUrl);
             rec.setDate(java.time.LocalDate.now().toString());
             rec.setTime(java.time.LocalTime.now().toString());
+
+            rec.setUserId(userId); // 🔥 ADDED (IMPORTANT)
 
             repository.save(rec);
 
@@ -125,7 +119,7 @@ public class RecordingController {
     }
 
     ////////////////////////////////////////////////////////
-    // ✅ GET ALL RECORDINGS
+    // ✅ GET ALL RECORDINGS (UNCHANGED)
     ////////////////////////////////////////////////////////
 
     @GetMapping("/all")
@@ -137,4 +131,21 @@ public class RecordingController {
             return ResponseEntity.status(500).body("Error fetching recordings");
         }
     }
+
+    ////////////////////////////////////////////////////////
+    // ✅ GET USER RECORDINGS (NEW API)
+    ////////////////////////////////////////////////////////
+
+    @GetMapping("/user/{userId}") // 🔥 ADDED
+    public ResponseEntity<?> getUserRecordings(@PathVariable String userId) {
+        try {
+            return ResponseEntity.ok(repository.findByUserId(userId));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(500).body("Error fetching user recordings");
+        }
+    }
+
+
+
 }

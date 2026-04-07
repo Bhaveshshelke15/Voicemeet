@@ -10,9 +10,7 @@ public class MeetingRecording {
     private Long id;
 
     private String meetingId;
-
     private String meetingName;
-
     private String participants;
 
     // ✅ Cloudinary URL
@@ -20,6 +18,9 @@ public class MeetingRecording {
 
     private String date;
     private String time;
+
+    // 🔥 ADD THIS FIELD
+    private String userId;
 
     // ================= GETTERS & SETTERS =================
 
@@ -51,7 +52,6 @@ public class MeetingRecording {
         this.participants = participants;
     }
 
-    // ✅ FIXED (fileUrl instead of fileName)
     public String getFileUrl() {
         return fileUrl;
     }
@@ -74,5 +74,14 @@ public class MeetingRecording {
 
     public void setTime(String time) {
         this.time = time;
+    }
+
+    // 🔥 GETTER & SETTER FOR USER ID
+    public String getUserId() {
+        return userId;
+    }
+
+    public void setUserId(String userId) {
+        this.userId = userId;
     }
 }
